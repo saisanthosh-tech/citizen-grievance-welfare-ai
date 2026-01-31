@@ -2,6 +2,7 @@ fastapi
 uvicorn
 sqlalchemy
 pydantic
+pydantic[email]
 spacy
 sentence-transformers
 scikit-learn
@@ -9,3 +10,5 @@ python-multipart
 requests
 numpy
 pandas
+passlib[bcrypt]
+python-jose[cryptography]

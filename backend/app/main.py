@@ -1,15 +1,17 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from datetime import timedelta
 from . import models, schemas, database
 from .database import engine
 from .ml_engine import analyzer
+from .auth import AuthService, get_current_user
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Citizen Grievance & Welfare Intelligence System",
     description="Government-grade platform for grievance management with explainable AI",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 # Dependency
@@ -19,6 +21,101 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# ============ AUTHENTICATION ENDPOINTS ============
+
+@app.post("/auth/register", response_model=schemas.TokenResponse)
+def register(user_data: schemas.UserRegister, db: Session = Depends(get_db)):
+    """
+    Register a new citizen account
+    
+    Provides:
+    - Email-based account creation
+    - Password hashing for security
+    - JWT token for subsequent requests
+    """
+    # Check if user already exists
+    existing_user = db.query(models.User).filter(models.User.email == user_data.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
+    # Create new user
+    hashed_password = AuthService.hash_password(user_data.password)
+    db_user = models.User(
+        email=user_data.email,
+        name=user_data.name,
+        phone=user_data.phone,
+        password_hash=hashed_password,
+        is_verified=False
+    )
+    
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    
+    # Create JWT token
+    access_token = AuthService.create_access_token(
+        data={"sub": db_user.id, "email": db_user.email}
+    )
+    
+    return schemas.TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=schemas.UserResponse.from_orm(db_user),
+        message="Registration successful! Your account has been created."
+    )
+
+
+@app.post("/auth/login", response_model=schemas.TokenResponse)
+def login(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
+    """
+    Login to your citizen account
+    
+    Returns:
+    - JWT token for authenticated requests
+    - User information
+    """
+    db_user = db.query(models.User).filter(models.User.email == user_data.email).first()
+    
+    if not db_user or not AuthService.verify_password(user_data.password, db_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+    
+    # Create JWT token
+    access_token = AuthService.create_access_token(
+        data={"sub": db_user.id, "email": db_user.email}
+    )
+    
+    return schemas.TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=schemas.UserResponse.from_orm(db_user),
+        message="Login successful!"
+    )
+
+
+@app.get("/auth/me", response_model=schemas.UserResponse)
+def get_current_user_info(user_id: int = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get current authenticated user's information
+    
+    Requires: Valid JWT token
+    """
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return schemas.UserResponse.from_orm(user)
+
+
+# ============ ORIGINAL ENDPOINTS ============
 
 @app.get("/", response_model=dict)
 def read_root():
@@ -36,9 +133,15 @@ def read_root():
     }
 
 @app.post("/grievances/", response_model=schemas.GrievanceResponse)
-def create_grievance(grievance: schemas.GrievanceCreate, db: Session = Depends(get_db)):
+def create_grievance(
+    grievance: schemas.GrievanceCreate, 
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Submit a citizen grievance.
+    
+    Requires: Valid JWT token (login first)
     
     The system will:
     1. Validate your submission
@@ -61,6 +164,7 @@ def create_grievance(grievance: schemas.GrievanceCreate, db: Session = Depends(g
         analysis = analyzer.analyze(grievance.description + " " + grievance.title)
 
         db_grievance = models.Grievance(
+            user_id=user_id,  # Link to authenticated user
             title=grievance.title,
             description=grievance.description,
             location=grievance.location,
@@ -90,9 +194,18 @@ def create_grievance(grievance: schemas.GrievanceCreate, db: Session = Depends(g
         raise HTTPException(status_code=500, detail=f"Error processing grievance: {str(e)}")
 
 @app.get("/grievances/", response_model=schemas.GrievanceListResponse)
-def read_grievances(skip: int = 0, limit: int = 100, category: str = None, priority: str = None, db: Session = Depends(get_db)):
+def read_grievances(
+    skip: int = 0, 
+    limit: int = 100, 
+    category: str = None, 
+    priority: str = None,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Retrieve grievances with optional filtering.
+    Retrieve your grievances with optional filtering.
+    
+    Requires: Valid JWT token (login first)
     
     Parameters:
     - skip: Number of records to skip (pagination)
@@ -104,8 +217,8 @@ def read_grievances(skip: int = 0, limit: int = 100, category: str = None, prior
         # Validate pagination
         limit = min(limit, 100)  # Max 100 records per request
         
-        # Build query
-        query = db.query(models.Grievance)
+        # Build query - only show user's own grievances
+        query = db.query(models.Grievance).filter(models.Grievance.user_id == user_id)
         
         # Apply filters
         if category:
@@ -176,3 +289,57 @@ def get_statistics(db: Session = Depends(get_db)):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error calculating statistics: {str(e)}")
+
+# ============ ADMIN ENDPOINTS ============
+
+@app.patch("/grievances/{grievance_id}/status", response_model=schemas.Grievance)
+def update_grievance_status(
+    grievance_id: int,
+    status_update: schemas.GrievanceStatusUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update the status of a grievance (Admin feature).
+    
+    Simple admin endpoint for demo purposes - no authentication required.
+    
+    Parameters:
+    - grievance_id: ID of the grievance to update
+    - status: New status value (Pending, In Progress, or Resolved)
+    
+    Returns:
+    - Updated grievance object
+    
+    Note: This is a demo feature. Production systems should implement
+    proper authentication and authorization.
+    """
+    try:
+        # Validate status value
+        allowed_statuses = ["Pending", "In Progress", "Resolved"]
+        if status_update.status not in allowed_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status. Allowed values: {', '.join(allowed_statuses)}"
+            )
+        
+        # Find the grievance
+        grievance = db.query(models.Grievance).filter(models.Grievance.id == grievance_id).first()
+        
+        if not grievance:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Grievance with ID {grievance_id} not found"
+            )
+        
+        # Update status
+        grievance.status = status_update.status
+        db.commit()
+        db.refresh(grievance)
+        
+        return grievance
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating grievance status: {str(e)}")

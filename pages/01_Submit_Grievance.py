@@ -9,6 +9,12 @@ from datetime import datetime
 
 st.set_page_config(page_title="Submit Grievance", page_icon="📝", layout="wide")
 
+# ============ AUTHENTICATION CHECK ============
+if not st.session_state.get("auth_token"):
+    st.error("🔐 Please login first to submit grievances")
+    st.info("👉 Go to the **Login** page to create an account or sign in")
+    st.stop()
+
 # Custom CSS
 st.markdown("""
     <style>
@@ -128,6 +134,11 @@ if submit_button:
     else:
         with st.spinner("Processing your grievance..."):
             try:
+                # Add authentication header with JWT token
+                headers = {
+                    "Authorization": f"Bearer {st.session_state.auth_token}"
+                }
+                
                 response = requests.post(
                     "http://localhost:8000/grievances/",
                     json={
@@ -135,6 +146,7 @@ if submit_button:
                         "description": grievance_description,
                         "location": grievance_location if grievance_location else None
                     },
+                    headers=headers,
                     timeout=10
                 )
                 
@@ -243,12 +255,12 @@ if st.session_state.submission_history:
     st.markdown("### Your Recent Submissions")
     
     for submission in st.session_state.submission_history[-5:]:
-        with st.expander(f"📋 {submission['title']} - {submission['category']}"):
+        with st.expander(f"📋 {submission.get('title', 'N/A')} - {submission.get('category', 'N/A')}"):
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Status", submission['status'])
+                st.metric("Status", submission.get('status', 'Pending'))
             with col2:
-                st.metric("Urgency", submission['priority'])
+                st.metric("Urgency", submission.get('priority', 'Medium'))
             with col3:
-                st.metric("ID", submission['id'])
-            st.caption(f"Submitted: {submission['timestamp']}")
+                st.metric("ID", submission.get('id', 'N/A'))
+            st.caption(f"Submitted: {submission.get('timestamp', 'N/A')}")

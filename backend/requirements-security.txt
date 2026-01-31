@@ -1,0 +1,69 @@
+# Security and Production Dependencies
+# Install with: pip install -r requirements-security.txt
+
+# Core dependencies (copy from main requirements.txt)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+sqlalchemy==2.0.23
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+scikit-learn==1.3.2
+numpy==1.26.2
+
+# Security
+cryptography==41.0.7
+PyJWT==2.8.1
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+bcrypt==4.1.1
+
+# API Security & Rate Limiting
+slowapi==0.1.9
+python-multipart==0.0.6
+
+# CORS
+fastapi-cors==0.0.6
+
+# Database
+psycopg2-binary==2.9.9  # PostgreSQL adapter for production
+
+# Logging
+python-json-logger==2.0.7
+
+# Environment
+python-decouple==3.8
+
+# HTTPS/Security Headers
+secure==0.3.0
+
+# Monitoring
+prometheus-client==0.19.0
+
+# Email
+python-multipart==0.0.6
+
+# Validation
+email-validator==2.1.0.post1
+
+# Data Protection
+cryptography==41.0.7
+
+# Gunicorn for production
+gunicorn==21.2.0
+uvicorn[standard]==0.24.0
+
+# Async support
+httpx==0.25.2
+
+# Request ID tracking
+contextvars==2.4.1  # Python 3.7+, built-in for 3.7+
+
+# Audit logging
+auditlog==3.0.0  # Optional but recommended
+
+# Performance
+orjson==3.9.10  # Faster JSON serialization
+
+# Health checks
+pydantic-extra-types==2.3.0
