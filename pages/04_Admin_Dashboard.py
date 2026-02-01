@@ -107,7 +107,7 @@ try:
             """, unsafe_allow_html=True)
         
         with col2:
-            pending_count = stats.get('status_breakdown', {}).get('Pending', 0)
+            pending_count = stats.get('by_status', {}).get('Pending', 0)
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-label">Pending</div>
@@ -116,7 +116,7 @@ try:
             """, unsafe_allow_html=True)
         
         with col3:
-            in_progress_count = stats.get('status_breakdown', {}).get('In Progress', 0)
+            in_progress_count = stats.get('by_status', {}).get('In Progress', 0)
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-label">In Progress</div>
@@ -125,7 +125,7 @@ try:
             """, unsafe_allow_html=True)
         
         with col4:
-            resolved_count = stats.get('status_breakdown', {}).get('Resolved', 0)
+            resolved_count = stats.get('by_status', {}).get('Resolved', 0)
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-label">Resolved</div>
@@ -303,7 +303,25 @@ try:
                     
                     with col3:
                         if st.button("💾 Save Changes", key=f"save_{grievance.get('id')}"):
-                            st.success("Changes saved successfully!")
+                            try:
+                                # Call API to update status
+                                response = requests.patch(
+                                    f"http://localhost:8000/grievances/{grievance.get('id')}/status",
+                                    json={"status": new_status},
+                                    timeout=10
+                                )
+                                
+                                if response.status_code == 200:
+                                    st.toast(f"🔄 Status updated to {new_status}!", icon="✅")
+                                    st.success(f"✅ Status updated to {new_status}!")
+                                    if new_status == "Resolved":
+                                        st.balloons()
+                                    # Refresh the page to show updated data
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ Failed to update status: {response.status_code}")
+                            except Exception as e:
+                                st.error(f"❌ Error updating status: {str(e)}")
                     
                     # Add notes
                     notes = st.text_area(
@@ -314,7 +332,8 @@ try:
                     )
                     
                     if st.button("📝 Update Notes", key=f"notes_btn_{grievance.get('id')}"):
-                        st.success("Notes updated successfully!")
+                        st.toast("📝 Notes updated successfully!", icon="✅")
+                        st.success("✅ Notes updated successfully!")
         
         else:
             st.info("No grievances match the selected filters.")

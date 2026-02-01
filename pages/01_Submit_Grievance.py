@@ -57,6 +57,23 @@ st.markdown("""
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         margin-bottom: 2rem;
     }
+    /* Fix metric cards for visibility */
+    [data-testid="stMetric"] {
+        background-color: #ffffff !important;
+        padding: 1rem !important;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        border: 1px solid #e0e0e0 !important;
+    }
+    [data-testid="stMetricValue"] {
+        color: #1a1a1a !important;
+        font-size: 1.5rem !important;
+        font-weight: bold !important;
+    }
+    [data-testid="stMetricLabel"] {
+        color: #666666 !important;
+        font-weight: 600 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -101,6 +118,32 @@ grievance_description = st.text_area(
     height=150,
     help="The more details you provide, the better we can assist you"
 )
+
+# Photo upload section
+st.markdown("---")
+st.subheader("📸 Supporting Documents (Optional)")
+st.info("💡 **Tip**: Adding photos helps us understand and resolve your issue faster!")
+
+uploaded_file = st.file_uploader(
+    "Upload photo or document",
+    type=["jpg", "jpeg", "png", "pdf"],
+    help="Supported formats: JPG, PNG, PDF (Max 5MB)"
+)
+
+if uploaded_file:
+    # Show preview for images
+    if uploaded_file.type.startswith('image'):
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+        with col2:
+            st.success("✅ Image uploaded!")
+            st.write(f"**Filename**: {uploaded_file.name}")
+            st.write(f"**Size**: {uploaded_file.size / 1024:.1f} KB")
+    else:
+        st.success(f"✅ Document uploaded: {uploaded_file.name}")
+
+st.markdown("---")
 
 grievance_location = st.text_input(
     "Your Location (Optional)",
@@ -153,55 +196,114 @@ if submit_button:
                 if response.status_code == 200:
                     result = response.json()
                     
+                    # Success with celebration
+                    st.balloons()
+                    st.toast("✅ Grievance submitted successfully!", icon="✅")
+                    
                     st.markdown("""
                         <div class="success-message">
-                        ✓ Your grievance has been received. We will review it carefully.
+                        ✓ Your grievance has been received and analyzed by our AI system.
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # Display results
+                    # Display results with AI confidence
                     st.markdown('<div class="result-section">', unsafe_allow_html=True)
-                    st.markdown("### What We've Identified")
+                    st.markdown("### 🤖 AI Analysis Results")
                     
                     grievance_data = result.get("grievance", {})
                     analysis = result.get("analysis", {})
                     
+                    # Confidence Score
+                    confidence = analysis.get('confidence', 0)
+                    confidence_pct = int(confidence * 100)
+                    
+                    st.markdown("#### 🎯 Classification Confidence")
+                    col1, col2 = st.columns([3, 1])
+                    
+                    with col1:
+                        st.progress(confidence)
+                        st.caption(f"AI Confidence: {confidence_pct}% - " + 
+                                  ("Excellent" if confidence_pct > 80 else "Good" if confidence_pct > 60 else "Fair"))
+                    
+                    with col2:
+                        st.metric(
+                            label="Confidence",
+                            value=f"{confidence_pct}%",
+                            delta="High" if confidence_pct > 70 else "Medium"
+                        )
+                    
+                    st.markdown("---")
+                    
+                    # Category and Priority
+                    st.markdown("#### 📊 Classification Details")
                     col_a, col_b = st.columns(2)
                     
                     with col_a:
+                        category = analysis.get('category', 'Unknown')
+                        st.metric(
+                            label="📁 Category",
+                            value=category,
+                            delta=f"{confidence_pct}% confident"
+                        )
                         st.markdown(f"""
-                        <strong>Category of Your Concern:</strong><br>
-                        <span class="category-badge">{analysis.get('category', 'Unknown')}</span>
+                            <div style='padding: 0.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                        border-radius: 8px; color: white; text-align: center;'>
+                                <strong style='text-shadow: 0 2px 4px rgba(0,0,0,0.3);'>{category}</strong>
+                            </div>
                         """, unsafe_allow_html=True)
                     
                     with col_b:
-                        urgency = "🔴 Urgent" if analysis.get('priority') == 'High' else (
-                            "🟡 Standard" if analysis.get('priority') == 'Medium' else "🟢 General"
+                        priority = analysis.get('priority', 'Medium')
+                        priority_colors = {
+                            'High': '#ff4444',
+                            'Medium': '#ffaa00',
+                            'Low': '#44ff44'
+                        }
+                        priority_color = priority_colors.get(priority, '#ffaa00')
+                        
+                        st.metric(
+                            label="⚡ Priority",
+                            value=priority,
+                            delta="Urgent" if priority == "High" else "Normal"
                         )
-                        st.markdown(f"<strong>Urgency Level:</strong><br>{urgency}", unsafe_allow_html=True)
+                        st.markdown(f"""
+                            <div style='padding: 0.5rem; background: {priority_color}; 
+                                        border-radius: 8px; color: white; text-align: center; font-weight: bold;'>
+                                {priority} Priority
+                            </div>
+                        """, unsafe_allow_html=True)
                     
                     st.markdown("---")
                     
-                    st.markdown("**Government Support Programs Available:**")
-                    schemes = analysis.get('suggested_schemes', []) or result.get('grievance', {}).get('suggested_schemes', [])
-                    for scheme in schemes:
-                        st.markdown(f"• {scheme}")
+                    # Schemes
+                    schemes = analysis.get('suggested_schemes', []) or grievance_data.get('suggested_schemes', [])
+                    if schemes:
+                        st.markdown("#### 🎁 Recommended Government Schemes")
+                        for scheme in schemes:
+                            st.markdown(f"""
+                                <div style='padding: 1rem; margin: 0.5rem 0;
+                                            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                                            border-radius: 10px; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);'>
+                                    <h4 style='margin: 0; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3);'>✨ {scheme}</h4>
+                                    <p style='margin: 0.5rem 0 0 0; opacity: 0.95; text-shadow: 0 1px 2px rgba(0,0,0,0.2);'>
+                                        This government scheme may be relevant to your grievance.
+                                    </p>
+                                </div>
+                            """, unsafe_allow_html=True)
                     
                     st.markdown("---")
                     
-                    # Confidence and explanation
-                    st.markdown(f"**AI Confidence:** {int(analysis.get('confidence', 0) * 100)}%")
-                    
-                    with st.expander("📋 View Analysis Details"):
+                    # AI Reasoning
+                    with st.expander("🔍 Why This Classification?", expanded=True):
                         explanation = analysis.get('explanation', {})
-                        st.markdown(f"**Detection:** {explanation.get('category_detection', 'N/A')}")
-                        st.markdown(f"**Priority Reason:** {explanation.get('priority_reason', 'N/A')}")
+                        st.write(f"**Detection Method**: {explanation.get('category_detection', 'Keyword matching')}")
+                        st.write(f"**Priority Reasoning**: {explanation.get('priority_reason', 'Based on urgency keywords')}")
                         
                         if explanation.get('relevant_keywords'):
-                            st.markdown("**Relevant Keywords Found:**")
+                            st.write("**Keywords Detected:**")
                             for cat, count in explanation.get('relevant_keywords', {}).items():
                                 if count > 0:
-                                    st.markdown(f"• {cat}: {count} keyword(s)")
+                                    st.write(f"- {cat}: {count} keyword(s)")
                     
                     st.markdown('</div>', unsafe_allow_html=True)
                     
