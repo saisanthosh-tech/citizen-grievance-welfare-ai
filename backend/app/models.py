@@ -33,6 +33,7 @@ class Grievance(Base):
     suggested_schemes = Column(JSON, default=[])
     confidence_score = Column(Float, default=0.0)  # Analysis confidence (0.0 to 1.0)
     analysis_metadata = Column(JSON, default={})  # Stores reasoning and explanation
+    status_history = Column(JSON, default=[])  # Timeline of status changes
     citizen = relationship("User", back_populates="grievances")
 
 class Scheme(Base):

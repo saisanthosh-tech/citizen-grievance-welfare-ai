@@ -210,11 +210,12 @@ if submit_button:
                     st.markdown('<div class="result-section">', unsafe_allow_html=True)
                     st.markdown("### 🤖 AI Analysis Results")
                     
-                    grievance_data = result.get("grievance", {})
-                    analysis = result.get("analysis", {})
+                    # Backend returns data at top level, not under 'grievance' key
+                    grievance_data = result
+                    analysis = result.get("analysis_metadata", {})
                     
                     # Confidence Score
-                    confidence = analysis.get('confidence', 0)
+                    confidence = grievance_data.get('confidence_score', 0)
                     confidence_pct = int(confidence * 100)
                     
                     st.markdown("#### 🎯 Classification Confidence")
@@ -239,7 +240,7 @@ if submit_button:
                     col_a, col_b = st.columns(2)
                     
                     with col_a:
-                        category = analysis.get('category', 'Unknown')
+                        category = grievance_data.get('category', 'Unknown')
                         st.metric(
                             label="📁 Category",
                             value=category,
@@ -253,7 +254,7 @@ if submit_button:
                         """, unsafe_allow_html=True)
                     
                     with col_b:
-                        priority = analysis.get('priority', 'Medium')
+                        priority = grievance_data.get('priority', 'Medium')
                         priority_colors = {
                             'High': '#ff4444',
                             'Medium': '#ffaa00',

@@ -287,7 +287,7 @@ try:
             )
         
         with col2:
-            resolved = int(stats.get('total_grievances', 0) * 0.72)
+            resolved = stats.get('by_status', {}).get('Resolved', 0)
             st.metric(
                 label="✅ Resolved",
                 value=resolved,

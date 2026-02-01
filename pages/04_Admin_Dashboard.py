@@ -287,6 +287,15 @@ try:
                         for scheme in schemes:
                             st.markdown(f"- {scheme}")
                     
+                    # Status History Timeline
+                    status_history = grievance.get('status_history', [])
+                    if status_history:
+                        with st.expander("📅 View Status History"):
+                            import sys
+                            sys.path.append('.')
+                            from components.timeline import render_timeline
+                            render_timeline(status_history)
+                    
                     # Management actions
                     st.markdown("---")
                     col1, col2, col3 = st.columns(3)

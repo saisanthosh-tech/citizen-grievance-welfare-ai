@@ -186,13 +186,21 @@ def create_grievance(
         from sqlalchemy import text
         import json
         
+        # Create initial timeline entry
+        initial_history = [{
+            "status": "Pending",
+            "timestamp": datetime.utcnow().isoformat(),
+            "changed_by": "citizen",
+            "action": "Grievance submitted"
+        }]
+        
         sql = text("""
             INSERT INTO grievances 
             (title, description, location, category, priority, status, created_at, 
-             suggested_schemes, confidence_score, analysis_metadata)
+             suggested_schemes, confidence_score, analysis_metadata, status_history)
             VALUES 
             (:title, :description, :location, :category, :priority, :status, :created_at,
-             :suggested_schemes, :confidence_score, :analysis_metadata)
+             :suggested_schemes, :confidence_score, :analysis_metadata, :status_history)
         """)
         
         result = db.execute(sql, {
@@ -205,7 +213,8 @@ def create_grievance(
             "created_at": datetime.utcnow(),
             "suggested_schemes": json.dumps(analysis["suggested_schemes"]),
             "confidence_score": analysis.get("confidence_score", 0.0),
-            "analysis_metadata": json.dumps(analysis.get("analysis_explanation", {}))
+            "analysis_metadata": json.dumps(analysis.get("analysis_explanation", {})),
+            "status_history": json.dumps(initial_history)
         })
         db.commit()
         
@@ -423,8 +432,26 @@ def update_grievance_status(
                 detail=f"Grievance with ID {grievance_id} not found"
             )
         
-        # Update status
+        # Update status and add to timeline
+        import json
+        
+        # Get current history or initialize empty list
+        current_history = grievance.status_history or []
+        if isinstance(current_history, str):
+            current_history = json.loads(current_history)
+        
+        # Add new timeline entry
+        new_entry = {
+            "status": status_update.status,
+            "timestamp": datetime.utcnow().isoformat(),
+            "changed_by": "admin",
+            "action": f"Status changed to {status_update.status}"
+        }
+        current_history.append(new_entry)
+        
+        # Update grievance
         grievance.status = status_update.status
+        grievance.status_history = current_history
         db.commit()
         db.refresh(grievance)
         

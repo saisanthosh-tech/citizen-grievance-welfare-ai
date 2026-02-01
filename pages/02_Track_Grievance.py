@@ -184,20 +184,18 @@ if search_button or grievance_id:
                             st.markdown("#### Official Notes")
                             st.info(grievance.get('notes'))
                         
-                        # Timeline
+                        # Timeline - Show status history
                         st.divider()
-                        st.markdown("#### Timeline")
+                        st.markdown("#### 📅 Status History")
                         
-                        timeline = []
-                        timeline.append(("Submitted", grievance.get('created_at', 'N/A'), "📥 Grievance received"))
+                        # Import timeline component
+                        import sys
+                        sys.path.append('.')
+                        from components.timeline import render_timeline
                         
-                        if grievance.get('updated_at') and grievance.get('updated_at') != grievance.get('created_at'):
-                            timeline.append(("Last Updated", grievance.get('updated_at', 'N/A'), f"📝 Status changed to: {grievance.get('status', 'Pending')}"))
-                        
-                        for event_type, event_date, event_desc in timeline:
-                            st.markdown(f'<div class="timeline-item">', unsafe_allow_html=True)
-                            st.markdown(f"**{event_type}:** {event_date}\n\n{event_desc}")
-                            st.markdown('</div>', unsafe_allow_html=True)
+                        # Get status history from grievance
+                        status_history = grievance.get('status_history', [])
+                        render_timeline(status_history)
                         
                         st.divider()
                         st.info("""
