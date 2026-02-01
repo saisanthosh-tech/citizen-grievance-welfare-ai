@@ -9,6 +9,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import pandas as pd
+from language_selector import language_selector, t, init_language
+
+# Initialize language
+init_language()
 
 # Page configuration
 st.set_page_config(
@@ -16,6 +20,9 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+
+# Language Selector
+language_selector()
 
 # API Configuration
 API_BASE_URL = "http://127.0.0.1:8000"
@@ -53,8 +60,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Header
-st.markdown('<h1 class="dashboard-title">📊 Analytics Dashboard</h1>', unsafe_allow_html=True)
-st.markdown("**Real-time insights into citizen grievances and system performance**")
+st.markdown(f'<h1 class="dashboard-title">📊 {t("analytics")}</h1>', unsafe_allow_html=True)
+st.markdown(f"**{t('real_time_insights')}**")
 st.markdown("---")
 
 # Fetch statistics

@@ -6,12 +6,19 @@ Citizens submit their grievances with optional location and automatic AI categor
 import streamlit as st
 import requests
 from datetime import datetime
+from language_selector import language_selector, t, init_language
+
+# Initialize language
+init_language()
 
 st.set_page_config(page_title="Submit Grievance", page_icon="📝", layout="wide")
 
+# Language Selector
+language_selector()
+
 # ============ AUTHENTICATION CHECK ============
 if not st.session_state.get("auth_token"):
-    st.error("🔐 Please login first to submit grievances")
+    st.error(f"🔐 {t('need_help')}")  # Placeholder, will add proper translation
     st.info("👉 Go to the **Login** page to create an account or sign in")
     st.stop()
 
@@ -83,11 +90,10 @@ if "submission_history" not in st.session_state:
 if "api_error" not in st.session_state:
     st.session_state.api_error = None
 
-st.title("📝 Submit Your Grievance")
+st.title(f"📝 {t('submit_your_grievance')}")
 
-st.markdown("""
-Tell us about your concern. Our system will automatically categorize your issue 
-and identify relevant government support programs.
+st.markdown(f"""
+{t('homepage_subtitle') if t('homepage_subtitle') != 'homepage_subtitle' else 'Tell us about your concern. Our system will automatically categorize your issue and identify relevant government support programs.'}
 """)
 
 # Reference guidance
@@ -107,8 +113,8 @@ We will automatically identify which government programs or departments can help
 st.markdown('<div class="form-section">', unsafe_allow_html=True)
 
 grievance_title = st.text_input(
-    "Subject of Your Concern",
-    placeholder="e.g., Water shortage in Sector 4",
+    t('grievance_title'),
+    placeholder=t('title_placeholder'),
     help="A brief description of what you want to report"
 )
 

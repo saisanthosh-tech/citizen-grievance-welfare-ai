@@ -13,13 +13,17 @@ import streamlit as st
 import requests
 import json
 from datetime import datetime
+from language_selector import language_selector, t, init_language
+
+# Initialize language
+init_language()
 
 # Page configuration
 st.set_page_config(
     page_title="Citizen Grievance & Welfare System",
     page_icon="🏛️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"  # Changed to show language selector
 )
 
 # Custom CSS for government-grade styling
@@ -260,12 +264,15 @@ def submit_grievance(title, description, location):
     except Exception as e:
         return None, f"Error submitting grievance: {str(e)}"
 
+# Language Selector (in sidebar)
+language_selector()
+
 # Header Section
-st.markdown("""
+st.markdown(f"""
     <div class="header-section">
-        <h1 style="color: #0066cc; margin: 0; padding: 0;">🏛️ Citizen Grievance Portal</h1>
+        <h1 style="color: #0066cc; margin: 0; padding: 0;">🏛️ {t('app_title')}</h1>
         <p style="color: #555; margin: 0.5rem 0 0 0; font-size: 1.1rem;">
-            Submit your concerns to help us serve you better. Your feedback is important to improving public services.
+            {t('homepage_subtitle')}
         </p>
     </div>
 """, unsafe_allow_html=True)

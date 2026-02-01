@@ -6,8 +6,15 @@ Citizens can check the status of their submitted grievances
 import streamlit as st
 import requests
 from datetime import datetime
+from language_selector import language_selector, t, init_language
+
+# Initialize language
+init_language()
 
 st.set_page_config(page_title="Track Grievance", page_icon="🔍", layout="wide")
+
+# Language Selector
+language_selector()
 
 # Custom CSS
 st.markdown("""
@@ -68,11 +75,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🔍 Track Your Grievance")
+st.title(f"🔍 {t('track_your_grievance')}")
 
-st.markdown("""
-Enter your grievance ID to check the current status of your submission.
-Your ID was provided when you submitted your grievance.
+st.markdown(f"""
+{t('enter_grievance_id')}
 """)
 
 # Search form

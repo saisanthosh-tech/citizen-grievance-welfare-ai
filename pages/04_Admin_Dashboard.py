@@ -7,8 +7,15 @@ import streamlit as st
 import requests
 import pandas as pd
 from datetime import datetime
+from language_selector import language_selector, t, init_language
 
-st.set_page_config(page_title="Admin Dashboard", page_icon="📊", layout="wide")
+# Initialize language
+init_language()
+
+st.set_page_config(page_title="Admin Dashboard", page_icon="📋", layout="wide")
+
+# Language Selector
+language_selector()
 
 # Custom CSS
 st.markdown("""
