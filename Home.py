@@ -193,6 +193,41 @@ st.markdown("""
     [data-testid="stMetricDelta"] {
         color: #28a745 !important;
     }
+    
+    /* MOBILE RESPONSIVENESS */
+    @media (max-width: 768px) {
+        .header-section {
+            padding: 1rem !important;
+            margin-bottom: 1rem !important;
+        }
+        .header-section h1 {
+            font-size: 1.5rem !important;
+        }
+        .header-section p {
+            font-size: 0.9rem !important;
+        }
+        .form-section {
+            padding: 1rem !important;
+        }
+        .result-section {
+            padding: 1rem !important;
+            margin-top: 0.5rem !important;
+        }
+        /* Make columns stack nicely */
+        [data-testid="column"] {
+            width: 100% !important;
+            flex: 1 1 auto !important;
+            min-width: 100% !important;
+        }
+        /* Adjust metric cards for mobile */
+        [data-testid="stMetric"] {
+            padding: 0.5rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        [data-testid="stMetricValue"] {
+            font-size: 1.5rem !important;
+        }
+    }
     </style>
 """, unsafe_allow_html=True)
 

@@ -29,6 +29,6 @@ echo.
 echo Press Ctrl+C to stop the server
 echo.
 
-python -m streamlit run frontend_streamlit.py
+python -m streamlit run Home.py
 
 pause
