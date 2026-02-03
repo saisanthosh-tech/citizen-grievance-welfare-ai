@@ -10,6 +10,7 @@ Design Philosophy:
 """
 
 import streamlit as st
+import requests
 
 # Page configuration
 st.set_page_config(
@@ -228,7 +229,7 @@ if page == "🏠 Home":
     st.markdown("### Portal Statistics")
     
     try:
-        response = requests.get("http://localhost:8000/stats/")
+        response = requests.get("http://localhost:8000/stats/", timeout=5)
         if response.status_code == 200:
             stats = response.json()
             
@@ -249,9 +250,13 @@ if page == "🏠 Home":
                 low = stats.get("by_priority", {}).get("Low", 0)
                 st.metric("🟢 General", low)
         else:
-            st.info("Statistics temporarily unavailable")
-    except:
-        st.info("Unable to load statistics. Backend may be offline.")
+            st.warning(f"Statistics temporarily unavailable (Status: {response.status_code})")
+    except requests.exceptions.ConnectionError:
+        st.error("❌ Cannot connect to backend. Please ensure the backend server is running on http://localhost:8000")
+    except requests.exceptions.Timeout:
+        st.warning("⏱️ Backend is taking too long to respond. Please try again.")
+    except Exception as e:
+        st.error(f"❌ Error loading statistics: {str(e)}")
     
     # FAQ
     st.divider()
@@ -314,5 +319,3 @@ elif page == "❓ About & Help":
 
 elif page == "🔐 Admin Login":
     st.switch_page("pages/04_Admin_Login.py")
-
-import requests

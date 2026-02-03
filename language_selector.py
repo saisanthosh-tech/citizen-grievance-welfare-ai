@@ -1,6 +1,6 @@
 """
 Language Selector Component
-Provides a toggle to switch between English and Hindi
+Provides a toggle to switch between English, Hindi, Telugu, and Tamil
 """
 
 import streamlit as st
@@ -37,8 +37,9 @@ def language_selector():
     
     # Create language selector in sidebar
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🌐 Language / भाषा")
+    st.sidebar.markdown("### 🌐 Language / भाषा / భాష / மொழி")
     
+    # Row 1: English and Hindi
     col1, col2 = st.sidebar.columns(2)
     
     with col1:
@@ -61,6 +62,31 @@ def language_selector():
         ):
             if current_lang != "hi":
                 set_language("hi")
+                st.rerun()
+    
+    # Row 2: Telugu and Tamil
+    col3, col4 = st.sidebar.columns(2)
+    
+    with col3:
+        if st.button(
+            "🇮🇳 తెలుగు",
+            key="lang_te",
+            use_container_width=True,
+            type="primary" if current_lang == "te" else "secondary"
+        ):
+            if current_lang != "te":
+                set_language("te")
+                st.rerun()
+    
+    with col4:
+        if st.button(
+            "🇮🇳 தமிழ்",
+            key="lang_ta",
+            use_container_width=True,
+            type="primary" if current_lang == "ta" else "secondary"
+        ):
+            if current_lang != "ta":
+                set_language("ta")
                 st.rerun()
     
     st.sidebar.markdown("---")

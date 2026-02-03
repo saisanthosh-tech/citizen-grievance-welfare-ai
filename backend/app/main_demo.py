@@ -196,10 +196,10 @@ def create_grievance(
         
         sql = text("""
             INSERT INTO grievances 
-            (title, description, location, category, priority, status, created_at, 
+            (title, description, location, latitude, longitude, category, priority, status, created_at, 
              suggested_schemes, confidence_score, analysis_metadata, status_history)
             VALUES 
-            (:title, :description, :location, :category, :priority, :status, :created_at,
+            (:title, :description, :location, :latitude, :longitude, :category, :priority, :status, :created_at,
              :suggested_schemes, :confidence_score, :analysis_metadata, :status_history)
         """)
         
@@ -207,6 +207,8 @@ def create_grievance(
             "title": grievance.title,
             "description": grievance.description,
             "location": grievance.location,
+            "latitude": getattr(grievance, 'latitude', None),
+            "longitude": getattr(grievance, 'longitude', None),
             "category": analysis["category"],
             "priority": analysis["priority"],
             "status": "Pending",
@@ -287,6 +289,8 @@ def read_grievances(
                 "title": g.title,
                 "description": g.description,
                 "location": g.location,
+                "latitude": g.latitude,
+                "longitude": g.longitude,
                 "category": g.category,
                 "priority": g.priority,
                 "status": g.status,
@@ -339,6 +343,47 @@ def get_grievance_by_id(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving grievance: {str(e)}")
+
+@app.delete("/grievances/{grievance_id}")
+def delete_grievance(grievance_id: int, db: Session = Depends(get_db)):
+    """
+    Delete a grievance from the system (Admin only).
+    
+    This endpoint allows administrators to permanently remove grievances
+    from the database. Use with caution as this action cannot be undone.
+    
+    Best practice: Only delete grievances that are Resolved or Rejected.
+    """
+    try:
+        grievance = db.query(models.Grievance).filter(models.Grievance.id == grievance_id).first()
+        
+        if not grievance:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Grievance with ID {grievance_id} not found"
+            )
+        
+        # Store info for response
+        grievance_info = {
+            "id": grievance.id,
+            "title": grievance.title,
+            "status": grievance.status
+        }
+        
+        # Delete the grievance
+        db.delete(grievance)
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Grievance #{grievance_id} has been permanently deleted",
+            "deleted_grievance": grievance_info
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting grievance: {str(e)}")
 
 @app.get("/stats/")
 def get_statistics(db: Session = Depends(get_db)):

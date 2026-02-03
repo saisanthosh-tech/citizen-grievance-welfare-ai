@@ -1,2 +1,6 @@
 streamlit==1.31.1
 requests==2.31.0
+plotly
+folium
+streamlit-folium
+pandas

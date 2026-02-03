@@ -25,6 +25,8 @@ class Grievance(Base):
     title = Column(String, index=True)
     description = Column(Text)
     location = Column(String, nullable=True)  # Citizen's location/address
+    latitude = Column(Float, nullable=True)  # GPS latitude
+    longitude = Column(Float, nullable=True)  # GPS longitude
     category = Column(String, index=True)  # Health, Education, etc.
     priority = Column(String)  # High, Medium, Low
     status = Column(String, default="Pending") # Pending, In Progress, Resolved

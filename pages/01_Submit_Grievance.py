@@ -151,11 +151,48 @@ if uploaded_file:
 
 st.markdown("---")
 
-grievance_location = st.text_input(
-    "Your Location (Optional)",
-    placeholder="e.g., Ward No. 5, Sector 4",
-    help="Helps us better understand issues in different areas"
-)
+# Location Section with Interactive Map
+st.subheader("📍 Mark Your Location")
+st.caption("Click on the map to mark the exact location of your grievance")
+
+# Initialize session state for picked coordinates
+if 'picked_lat' not in st.session_state:
+    st.session_state.picked_lat = None
+if 'picked_lon' not in st.session_state:
+    st.session_state.picked_lon = None
+
+# Import location picker
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from components.location_picker import render_location_picker
+
+# Render interactive map
+picked_coords = render_location_picker()
+
+# Show picked coordinates
+if picked_coords:
+    lat, lon = picked_coords
+    st.success(f"✅ Location Marked: {lat:.6f}°N, {lon:.6f}°E")
+    
+    # Optional: Add location description
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        grievance_location = st.text_input(
+            "Location Description (Optional)",
+            placeholder="e.g., Near City Hospital, Main Road",
+            help="Add a description to help identify the location"
+        )
+    with col2:
+        if st.button("🗑️ Clear Location", type="secondary"):
+            st.session_state.picked_lat = None
+            st.session_state.picked_lon = None
+            st.rerun()
+else:
+    st.info("👆 Click on the map above to mark your location")
+    grievance_location = None
+
+st.markdown("---")
 
 submit_button = st.button(
     "📮 Submit Grievance",
@@ -193,7 +230,9 @@ if submit_button:
                     json={
                         "title": grievance_title,
                         "description": grievance_description,
-                        "location": grievance_location if grievance_location else None
+                        "location": grievance_location if grievance_location else None,
+                        "latitude": st.session_state.get('picked_lat'),
+                        "longitude": st.session_state.get('picked_lon')
                     },
                     headers=headers,
                     timeout=10

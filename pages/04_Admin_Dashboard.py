@@ -339,6 +339,47 @@ try:
                             except Exception as e:
                                 st.error(f"❌ Error updating status: {str(e)}")
                     
+                    # Delete grievance option (for Resolved/Rejected only)
+                    st.markdown("---")
+                    status = grievance.get('status', '')
+                    if status in ['Resolved', 'Rejected']:
+                        st.markdown("**🗑️ Delete Grievance**")
+                        st.caption("⚠️ This action cannot be undone. Only delete grievances that are no longer needed.")
+                        
+                        col_del1, col_del2 = st.columns([1, 2])
+                        with col_del1:
+                            if st.button("🗑️ Delete", type="secondary", key=f"delete_{grievance.get('id')}"):
+                                st.session_state[f"confirm_delete_{grievance.get('id')}"] = True
+                        
+                        # Confirmation dialog
+                        if st.session_state.get(f"confirm_delete_{grievance.get('id')}", False):
+                            st.warning(f"⚠️ Are you sure you want to permanently delete grievance #{grievance.get('id')}?")
+                            col_conf1, col_conf2 = st.columns(2)
+                            
+                            with col_conf1:
+                                if st.button("✅ Yes, Delete", type="primary", key=f"confirm_yes_{grievance.get('id')}"):
+                                    try:
+                                        response = requests.delete(
+                                            f"http://localhost:8000/grievances/{grievance.get('id')}",
+                                            timeout=10
+                                        )
+                                        
+                                        if response.status_code == 200:
+                                            st.success(f"✅ Grievance #{grievance.get('id')} deleted successfully!")
+                                            st.session_state[f"confirm_delete_{grievance.get('id')}"] = False
+                                            st.rerun()
+                                        else:
+                                            st.error(f"❌ Failed to delete: {response.status_code}")
+                                    except Exception as e:
+                                        st.error(f"❌ Error deleting grievance: {str(e)}")
+                            
+                            with col_conf2:
+                                if st.button("❌ Cancel", key=f"confirm_no_{grievance.get('id')}"):
+                                    st.session_state[f"confirm_delete_{grievance.get('id')}"] = False
+                                    st.rerun()
+                    else:
+                        st.info("💡 Tip: Only Resolved or Rejected grievances can be deleted.")
+                    
                     # Add notes
                     notes = st.text_area(
                         "Add Official Notes",

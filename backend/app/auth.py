@@ -7,7 +7,7 @@ from typing import Optional
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
 
 # Configuration
@@ -75,7 +75,7 @@ class AuthService:
         return secrets.token_urlsafe(32)
 
 
-async def get_current_user(credentials: HTTPAuthCredentials = Depends(security)):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Dependency to get current authenticated user from token"""
     token = credentials.credentials
     try:

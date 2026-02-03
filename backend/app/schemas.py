@@ -45,6 +45,8 @@ class GrievanceBase(BaseModel):
     title: str
     description: str
     location: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class GrievanceCreate(GrievanceBase):
     pass
